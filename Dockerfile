@@ -1,7 +1,5 @@
-# Imagen con Nginx + PHP-FPM ya integrada (simple para Laravel)
 FROM webdevops/php-nginx:8.2
 
-# Document root
 ENV WEB_DOCUMENT_ROOT=/app/public
 ENV PHP_DISPLAY_ERRORS=0
 ENV PHP_MEMORY_LIMIT=512M
@@ -11,33 +9,26 @@ ENV PHP_UPLOAD_MAX_FILESIZE=32M
 
 WORKDIR /app
 
-# Instala dependencias del sistema necesarias para Laravel (extensiones ya vienen en la imagen)
-RUN apt-get update -y && apt-get install -y \
-    git unzip libzip-dev libpng-dev && \
+RUN apt-get update -y && apt-get install -y git unzip libzip-dev libpng-dev && \
     docker-php-ext-install zip && \
     rm -rf /var/lib/apt/lists/*
 
-# Instala Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copia composer.* primero para cache de dependencias
+# Copia composer.* y instala sin scripts (artisan aún no existe)
 COPY composer.json composer.lock* /app/
+RUN composer install --no-dev --no-interaction --no-ansi --no-progress --prefer-dist --optimize-autoloader --no-scripts
 
-# Instala dependencias sin dev (ajústalo si necesitas dev)
-RUN composer install --no-dev --no-interaction --no-ansi --no-progress --prefer-dist --optimize-autoloader
-
-# Copia el resto del proyecto
+# Ahora sí copia el resto del código
 COPY . /app
 
-# Permisos para storage y cache
+# Permisos y optimizaciones
 RUN chown -R application:application /app && \
     chmod -R ug+rwX storage bootstrap/cache
 
-# Genera la clave de la app si no existe (Render puede inyectar APP_KEY; si no, la generamos)
-# Importante: --force para sobreescribir si el archivo ya existe sin clave
+# Ejecuta scripts artisan ahora que el archivo existe
+RUN php artisan package:discover --ansi || true
 RUN php artisan key:generate --force || true
-
-# Optimiza
 RUN php artisan route:cache || true && \
     php artisan config:cache || true && \
     php artisan view:cache || true
