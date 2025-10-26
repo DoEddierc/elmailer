@@ -1,6 +1,7 @@
 services:
+  # --- Servicio web principal ---
   - type: web
-    name: laravel-mailer-web
+    name: elmailer-web
     env: docker
     plan: free
     autoDeploy: true
@@ -11,23 +12,22 @@ services:
       - key: APP_DEBUG
         value: false
       - key: APP_URL
-        value: https://TU-DOMINIO-EN-RENDER.onrender.com
+        value: https://elmailer-segumin.onrender.com
       - key: LOG_CHANNEL
         value: stderr
-      - key: SESSION_DRIVER
-        value: file
       - key: CACHE_STORE
         value: redis
       - key: QUEUE_CONNECTION
         value: redis
+      - key: SESSION_DRIVER
+        value: file
       - key: REDIS_CLIENT
         value: phpredis
       - key: REDIS_URL
         fromService:
-          name: laravel-mailer-redis
+          name: elmailer-redis
           type: redis
           property: connectionString
-      # SMTP Gmail
       - key: MAIL_MAILER
         value: smtp
       - key: MAIL_HOST
@@ -37,19 +37,19 @@ services:
       - key: MAIL_ENCRYPTION
         value: tls
       - key: MAIL_USERNAME
-        sync: false   # setéalo manual en el panel si prefieres
+        sync: false      # se define manualmente en el panel
       - key: MAIL_PASSWORD
-        sync: false   # App Password de Gmail (16 chars, sin espacios)
+        sync: false      # App Password de Gmail (16 caracteres)
       - key: MAIL_FROM_ADDRESS
         sync: false
       - key: MAIL_FROM_NAME
-        value: "Tu Remitente"
-      # Clave de la app: puedes pegarla a mano en el panel como secreto
+        value: "El Mailer"
       - key: APP_KEY
-        sync: false
+        sync: false      # pega aquí tu clave base64 de Laravel
 
+  # --- Worker de colas (envía correos) ---
   - type: worker
-    name: laravel-mailer-worker
+    name: elmailer-worker
     env: docker
     plan: free
     autoDeploy: true
@@ -60,21 +60,22 @@ services:
       - key: APP_DEBUG
         value: false
       - key: APP_URL
-        value: https://TU-DOMINIO-EN-RENDER.onrender.com
+        value: https://elmailer-segumin.onrender.com
       - key: LOG_CHANNEL
         value: stderr
       - key: CACHE_STORE
         value: redis
       - key: QUEUE_CONNECTION
         value: redis
+      - key: SESSION_DRIVER
+        value: file
       - key: REDIS_CLIENT
         value: phpredis
       - key: REDIS_URL
         fromService:
-          name: laravel-mailer-redis
+          name: elmailer-redis
           type: redis
           property: connectionString
-      # SMTP Gmail (mismos valores que el web)
       - key: MAIL_MAILER
         value: smtp
       - key: MAIL_HOST
@@ -90,11 +91,12 @@ services:
       - key: MAIL_FROM_ADDRESS
         sync: false
       - key: MAIL_FROM_NAME
-        value: "Tu Remitente"
+        value: "El Mailer"
       - key: APP_KEY
         sync: false
 
+  # --- Redis administrado ---
   - type: redis
-    name: laravel-mailer-redis
-    ipAllowList: []     # sin IPs públicas (solo interno)
+    name: elmailer-redis
     plan: free
+    ipAllowList: []
