@@ -24,6 +24,24 @@ Route::get('/redis-debug', function () {
 });
 
 
+
+Route::get('/queue-info', function () {
+    try {
+        $pending = Redis::connection()->llen('queues:default');
+        $delayed = Redis::connection()->zcard('queues:default:delayed');
+        return ['queue' => 'default', 'pending' => $pending, 'delayed' => $delayed];
+    } catch (\Throwable $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+})->withoutMiddleware([VerifyCsrfToken::class]);
+
+Route::post('/queue-test', function () {
+    \App\Jobs\TestLogJob::dispatch(); // crea este Job abajo
+    return ['ok' => true];
+})->withoutMiddleware([VerifyCsrfToken::class]);
+
+
+
 Route::post('/circulares/enviar', [CircularController::class, 'send'])
     ->withoutMiddleware([VerifyCsrfToken::class]);
 
